@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/dns/mgmt/dns"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 )
@@ -63,13 +64,9 @@ func updateRecord(config *DynDnsConfig) (dns.RecordSet, error) {
 		return dns.RecordSet{}, errors.New("Failed to retrieve public IP: " + err.Error())
 	}
 	client := dns.NewRecordSetsClient(config.subscriptionId)
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
+	authorizer, err := getAuthorizer(config)
 	if err != nil {
-		creds := auth.NewClientCredentialsConfig(config.clientId, config.clientSecret, config.tenantId)
-		authorizer, err = creds.Authorizer()
-		if err != nil {
-			return dns.RecordSet{}, err
-		}
+		return dns.RecordSet{}, err
 	}
 
 	client.Authorizer = authorizer
@@ -86,6 +83,15 @@ func updateRecord(config *DynDnsConfig) (dns.RecordSet, error) {
 		return dns.RecordSet{}, err
 	}
 	return result, nil
+}
+
+func getAuthorizer(config *DynDnsConfig) (autorest.Authorizer, error) {
+	if config.clientId == "" || config.clientSecret == "" || config.tenantId == "" {
+		return auth.NewAuthorizerFromEnvironment()
+	}
+	creds := auth.NewClientCredentialsConfig(config.clientId, config.clientSecret, config.tenantId)
+	authorizer, err := creds.Authorizer()
+	return authorizer, err
 }
 
 func getIP() (string, error) {
