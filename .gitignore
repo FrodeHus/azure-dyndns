@@ -1,4 +1,4 @@
-go/azure-dyndns
+azure-dyndns-client/azure-dyndns-client
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

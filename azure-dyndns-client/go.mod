@@ -1,4 +1,4 @@
-module github.com/frodehus/azure-dyndns/go
+module github.com/frodehus/azure-dyndns/azure-dyndns-client
 
 go 1.16
 
