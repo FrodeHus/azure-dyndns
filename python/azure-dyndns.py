@@ -1,17 +1,29 @@
 from azure.mgmt.dns import DnsManagementClient
 from azure.identity import ClientSecretCredential
+import argparse
 
-subscription_id = ""
-tenant_id = ""
-client_id = ""
-client_secret = ""
+parser = argparse.ArgumentParser(description="Update Azure DNS record based on current public IP")
+parser.add_argument("--subscription-id", help="Azure subscription ID")
+parser.add_argument("--resource-group", help="Azure resource group name")
+parser.add_argument("--zone", help="Azure DNS zone name")
+parser.add_argument("--record", help="DNS record name to create/update")
+parser.add_argument("--tenant-id", help="Azure tenant ID")
+parser.add_argument("--client-id", help="Azure service principal client id")
+parser.add_argument("--client-secret", help="Service principal client secret")
+args = parser.parse_args()
+
+subscription_id = args.subscription_id
+tenant_id = args.tenant_id
+client_id = args.client_id
+client_secret = args.client_secret
+
 credentials = ClientSecretCredential(
     tenant_id, client_id, client_secret
 )
 
-resource_group = ""
-dns_zone = ""
-record = ""
+resource_group = args.resource_group
+dns_zone = args.zone
+record = args.record
 
 
 def update_dns(ip: str):
