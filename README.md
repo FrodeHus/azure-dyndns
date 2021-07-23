@@ -70,6 +70,10 @@ optional arguments:
 
 .NET 5.0 implementation
 
+### Build standalone executable
+
+`dotnet publish -c Release -r <RID>` where [RID](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog) is the Runtime Identifier for example `linux-x64`
+
 ```
 $ dotnet run -- --help 
 

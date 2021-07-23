@@ -16,11 +16,11 @@ namespace AzureDynDns
     {
         public class Options
         {
-            [Option('r', "resource-group", Required = true, HelpText = "Azure resource group where Azure DNS is located")]
+            [Option('g', "resource-group", Required = true, HelpText = "Azure resource group where Azure DNS is located")]
             public string ResourceGroup { get; set; }
             [Option('z', "zone", Required = true, HelpText = "Azure DNS zone name")]
             public string Zone { get; set; }
-            [Option('n', "record", Required = true, HelpText = "DNS record name to be created/updated")]
+            [Option('r', "record", Required = true, HelpText = "DNS record name to be created/updated")]
             public string Record { get; set; }
             [Option('s', "subscription-id", Required = true, HelpText = "Azure subscription ID")]
             public string SubscriptionId { get; set; }
