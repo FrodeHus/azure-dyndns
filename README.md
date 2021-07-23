@@ -80,11 +80,11 @@ $ dotnet run -- --help
 Azure-DynDns 1.0.0
 Copyright (C) 2021 Azure-DynDns
 
-  -r, --resource-group     Required. Azure resource group where Azure DNS is located
+  -g, --resource-group     Required. Azure resource group where Azure DNS is located
 
   -z, --zone               Required. Azure DNS zone name
 
-  -n, --record             Required. DNS record name to be created/updated
+  -r, --record             Required. DNS record name to be created/updated
 
   -s, --subscription-id    Required. Azure subscription ID
 
@@ -92,10 +92,10 @@ Copyright (C) 2021 Azure-DynDns
 
   -c, --client-id          Azure service principal client ID (or set AZURE_CLIENT_ID)
 
-  -x, --client-secret      Azure service principal client secret (or set
-                           AZURE_CLIENT_SECRET)
+  -x, --client-secret      Azure service principal client secret (or set AZURE_CLIENT_SECRET)
 
   --help                   Display this help screen.
 
   --version                Display version information.
+
 ```
