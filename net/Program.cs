@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Azure.Identity;
 using CommandLine;
@@ -16,18 +18,28 @@ namespace AzureDynDns
     {
         public class Options
         {
-            [Option('g', "resource-group", Required = true, HelpText = "Azure resource group where Azure DNS is located")]
+            [JsonIgnore]
+            [Option('f', "config-file", HelpText = "Path to configuration file")]
+            public string ConfigFile { get; set; }
+            [JsonPropertyName("resourceGroup")]
+            [Option('g', "resource-group", HelpText = "Azure resource group where Azure DNS is located")]
             public string ResourceGroup { get; set; }
-            [Option('z', "zone", Required = true, HelpText = "Azure DNS zone name")]
+            [JsonPropertyName("zoneName")]
+            [Option('z', "zone", HelpText = "Azure DNS zone name")]
             public string Zone { get; set; }
-            [Option('r', "record", Required = true, HelpText = "DNS record name to be created/updated")]
+            [JsonPropertyName("recordName")]
+            [Option('r', "record", HelpText = "DNS record name to be created/updated")]
             public string Record { get; set; }
-            [Option('s', "subscription-id", Required = true, HelpText = "Azure subscription ID")]
+            [JsonPropertyName("subscriptionId")]
+            [Option('s', "subscription-id", HelpText = "Azure subscription ID")]
             public string SubscriptionId { get; set; }
+            [JsonPropertyName("tenantId")]
             [Option('t', "tenant-id", HelpText = "Azure tenant ID (or set AZURE_TENANT_ID)")]
             public string TenantId { get; set; }
+            [JsonPropertyName("clientId")]
             [Option('c', "client-id", HelpText = "Azure service principal client ID (or set AZURE_CLIENT_ID)")]
             public string ClientId { get; set; }
+            [JsonPropertyName("clientSecret")]
             [Option('x', "client-secret", HelpText = "Azure service principal client secret (or set AZURE_CLIENT_SECRET)")]
             public string ClientSecret { get; set; }
         }
@@ -38,6 +50,12 @@ namespace AzureDynDns
 
         public static async Task UpdateDNS(Options options)
         {
+            if (!string.IsNullOrEmpty(options.ConfigFile))
+            {
+                var configJson = File.ReadAllText(options.ConfigFile);
+                options = JsonSerializer.Deserialize<Options>(configJson);
+            }
+
             var (tenantId, clientId, clientSecret) = GetCredentialInfo(options);
             var creds = await ApplicationTokenProvider.LoginSilentAsync(tenantId, clientId, clientSecret);
             var dnsClient = new DnsManagementClient(creds);
@@ -49,7 +67,7 @@ namespace AzureDynDns
             recordSet.ARecords = new List<ARecord>();
             recordSet.ARecords.Add(new ARecord(ip));
             recordSet.Metadata = new Dictionary<string, string>();
-            recordSet.Metadata.Add("createdBy", "Azure-DynDns");
+            recordSet.Metadata.Add("createdBy", "Azure-DynDns (.NET)");
             recordSet.Metadata.Add("updated", DateTime.Now.ToString());
             var result = await dnsClient.RecordSets.CreateOrUpdateAsync(options.ResourceGroup, options.Zone, options.Record, RecordType.A, recordSet);
 
@@ -69,5 +87,16 @@ namespace AzureDynDns
             var clientSecret = options.ClientSecret ?? Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET");
             return (tenantId, clientId, clientSecret);
         }
+    }
+
+    public class Config
+    {
+        public string SubscriptionId { get; set; }
+        public string ResourceGroup { get; set; }
+        public string ZoneName { get; set; }
+        public string RecordName { get; set; }
+        public string TenantId { get; set; }
+        public string ClientId { get; set; }
+        public string ClientSecret { get; set; }
     }
 }
