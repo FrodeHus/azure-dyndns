@@ -1,4 +1,4 @@
-package azuredyndnsclient
+package main
 
 import (
 	"context"
@@ -18,6 +18,16 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 )
 
+type Config struct {
+	SubscriptionId string `json:"subscriptionId"`
+	ResourceGroup  string `json:"resourceGroup"`
+	ZoneName       string
+	RecordName     string
+	ClientId       string
+	ClientSecret   string
+	TenantId       string
+}
+
 func main() {
 	subscription := flag.String("subscription-id", "", "ID of the subscription where the Azure DNS zone is located")
 	resourceGroup := flag.String("resource-group", "", "Name of the resource group where the Azure DNS zone is located")
@@ -36,24 +46,16 @@ func main() {
 			log.Fatal("Failed to load configuration file: " + err.Error())
 		}
 
-		c = Config{
-			subscriptionId: config.subscriptionId,
-			resourceGroup:  config.resourceGroup,
-			zoneName:       config.zoneName,
-			recordName:     config.recordName,
-			tenantId:       config.tenantId,
-			clientId:       config.clientId,
-			clientSecret:   config.clientSecret,
-		}
+		c = config
 	} else {
 		c = Config{
-			subscriptionId: *subscription,
-			resourceGroup:  *resourceGroup,
-			zoneName:       *zoneName,
-			recordName:     *recordName,
-			clientId:       *clientId,
-			clientSecret:   *clientSecret,
-			tenantId:       *tenantId,
+			SubscriptionId: *subscription,
+			ResourceGroup:  *resourceGroup,
+			ZoneName:       *zoneName,
+			RecordName:     *recordName,
+			ClientId:       *clientId,
+			ClientSecret:   *clientSecret,
+			TenantId:       *tenantId,
 		}
 	}
 
@@ -71,12 +73,12 @@ func main() {
 }
 
 func updateRecord(config *Config) (dns.RecordSet, error) {
-	fmt.Printf("Using:\nsubscription: %s\nzone: %s\nrecord: %s", config.subscriptionId, config.zoneName, config.recordName)
+	fmt.Printf("Using:\nsubscription: %s\nzone: %s\nrecord: %s", config.SubscriptionId, config.ZoneName, config.RecordName)
 	ip, err := getIP()
 	if err != nil {
 		return dns.RecordSet{}, errors.New("Failed to retrieve public IP: " + err.Error())
 	}
-	client := dns.NewRecordSetsClient(config.subscriptionId)
+	client := dns.NewRecordSetsClient(config.SubscriptionId)
 	authorizer, err := getAuthorizer(config)
 	if err != nil {
 		return dns.RecordSet{}, err
@@ -86,7 +88,7 @@ func updateRecord(config *Config) (dns.RecordSet, error) {
 	creator := "azure-dyndns-client"
 	updatedtime := time.Now().String()
 	record := dns.RecordSet{
-		Name: &config.recordName,
+		Name: &config.RecordName,
 		RecordSetProperties: &dns.RecordSetProperties{
 			TTL:      to.Int64Ptr(300),
 			ARecords: &[]dns.ARecord{{Ipv4Address: &ip}},
@@ -96,7 +98,7 @@ func updateRecord(config *Config) (dns.RecordSet, error) {
 			},
 		},
 	}
-	result, err := client.CreateOrUpdate(context.Background(), config.resourceGroup, config.zoneName, config.recordName, dns.A, record, "", "")
+	result, err := client.CreateOrUpdate(context.Background(), config.ResourceGroup, config.ZoneName, config.RecordName, dns.A, record, "", "")
 	if err != nil {
 		return dns.RecordSet{}, err
 	}
@@ -104,10 +106,10 @@ func updateRecord(config *Config) (dns.RecordSet, error) {
 }
 
 func getAuthorizer(config *Config) (autorest.Authorizer, error) {
-	if config.clientId == "" || config.clientSecret == "" || config.tenantId == "" {
+	if config.ClientId == "" || config.ClientSecret == "" || config.TenantId == "" {
 		return auth.NewAuthorizerFromEnvironment()
 	}
-	creds := auth.NewClientCredentialsConfig(config.clientId, config.clientSecret, config.tenantId)
+	creds := auth.NewClientCredentialsConfig(config.ClientId, config.ClientSecret, config.TenantId)
 	authorizer, err := creds.Authorizer()
 	return authorizer, err
 }
