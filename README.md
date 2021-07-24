@@ -10,6 +10,19 @@ All clients makes use of the following environment variables if found:
 
 These can be overriden using command line arguments as well - but remember that these can show up in history, process listings etc.
 
+All clients can also make use of a configuration like this:
+```json
+{
+ "subscriptionId": "",
+ "resourceGroup": "",
+ "zoneName": "",
+ "recordName": "",
+ "clientId": "",
+ "clientSecret": "",
+  "tenantId": ""
+}
+```
+
 ## azure-dyndns-client
 
 Golang implementation.
