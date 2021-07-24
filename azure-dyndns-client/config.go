@@ -1,8 +1,11 @@
 package azuredyndnsclient
 
 type Config struct {
-	zone           string
-	resourceGroup  string
 	subscriptionId string
-	record         string
+	resourceGroup  string
+	zoneName       string
+	recordName     string
+	clientId       string
+	clientSecret   string
+	tenantId       string
 }

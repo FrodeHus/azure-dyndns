@@ -18,17 +18,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 )
 
-type DynDnsConfig struct {
-	subscriptionId string
-	resourceGroup  string
-	zoneName       string
-	recordName     string
-	clientId       string
-	clientSecret   string
-	tenantId       string
-	configFile     string
-}
-
 func main() {
 	subscription := flag.String("subscription-id", "", "ID of the subscription where the Azure DNS zone is located")
 	resourceGroup := flag.String("resource-group", "", "Name of the resource group where the Azure DNS zone is located")
@@ -40,17 +29,35 @@ func main() {
 	configFile := flag.String("config", "", "Path of the configuration file to use")
 	flag.Parse()
 
-	c := &DynDnsConfig{
-		subscriptionId: *subscription,
-		resourceGroup:  *resourceGroup,
-		zoneName:       *zoneName,
-		recordName:     *recordName,
-		clientId:       *clientId,
-		clientSecret:   *clientSecret,
-		tenantId:       *tenantId,
-		configFile:     *configFile,
+	var c Config
+	if configFile != nil {
+		config, err := readConfigFile(*configFile)
+		if err != nil {
+			log.Fatal("Failed to load configuration file: " + err.Error())
+		}
+
+		c = Config{
+			subscriptionId: config.subscriptionId,
+			resourceGroup:  config.resourceGroup,
+			zoneName:       config.zoneName,
+			recordName:     config.recordName,
+			tenantId:       config.tenantId,
+			clientId:       config.clientId,
+			clientSecret:   config.clientSecret,
+		}
+	} else {
+		c = Config{
+			subscriptionId: *subscription,
+			resourceGroup:  *resourceGroup,
+			zoneName:       *zoneName,
+			recordName:     *recordName,
+			clientId:       *clientId,
+			clientSecret:   *clientSecret,
+			tenantId:       *tenantId,
+		}
 	}
-	result, err := updateRecord(c)
+
+	result, err := updateRecord(&c)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,7 +70,8 @@ func main() {
 	fmt.Printf("%s\n", r)
 }
 
-func updateRecord(config *DynDnsConfig) (dns.RecordSet, error) {
+func updateRecord(config *Config) (dns.RecordSet, error) {
+	fmt.Printf("Using:\nsubscription: %s\nzone: %s\nrecord: %s", config.subscriptionId, config.zoneName, config.recordName)
 	ip, err := getIP()
 	if err != nil {
 		return dns.RecordSet{}, errors.New("Failed to retrieve public IP: " + err.Error())
@@ -95,7 +103,7 @@ func updateRecord(config *DynDnsConfig) (dns.RecordSet, error) {
 	return result, nil
 }
 
-func getAuthorizer(config *DynDnsConfig) (autorest.Authorizer, error) {
+func getAuthorizer(config *Config) (autorest.Authorizer, error) {
 	if config.clientId == "" || config.clientSecret == "" || config.tenantId == "" {
 		return auth.NewAuthorizerFromEnvironment()
 	}
