@@ -1,4 +1,4 @@
-package main
+package azuredyndnsclient
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/dns/mgmt/dns"
@@ -25,6 +26,7 @@ type DynDnsConfig struct {
 	clientId       string
 	clientSecret   string
 	tenantId       string
+	configFile     string
 }
 
 func main() {
@@ -35,6 +37,7 @@ func main() {
 	clientId := flag.String("client-id", "", "Client ID of the service principal used to login (or set AZURE_CLIENT_ID)")
 	clientSecret := flag.String("client-secret", "", "Client secret used to authenticate (or set AZURE_CLIENT_SECRET)")
 	tenantId := flag.String("tenant", "", "Azure tenant where the Azure DNS is located (or set AZURE_TENANT_ID)")
+	configFile := flag.String("config", "", "Path of the configuration file to use")
 	flag.Parse()
 
 	c := &DynDnsConfig{
@@ -45,6 +48,7 @@ func main() {
 		clientId:       *clientId,
 		clientSecret:   *clientSecret,
 		tenantId:       *tenantId,
+		configFile:     *configFile,
 	}
 	result, err := updateRecord(c)
 	if err != nil {
@@ -111,4 +115,19 @@ func getIP() (string, error) {
 		return "", err
 	}
 	return string(body), nil
+}
+
+func readConfigFile(file string) (Config, error) {
+	jsonFile, err := os.Open(file)
+	if err != nil {
+		return Config{}, err
+	}
+
+	bytes, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		return Config{}, err
+	}
+	var config Config
+	json.Unmarshal(bytes, &config)
+	return config, nil
 }
