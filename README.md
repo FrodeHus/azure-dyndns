@@ -97,13 +97,15 @@ $ dotnet run -- --help
 Azure-DynDns 1.0.0
 Copyright (C) 2021 Azure-DynDns
 
-  -g, --resource-group     Required. Azure resource group where Azure DNS is located
+  -f, --config-file        Path to configuration file
 
-  -z, --zone               Required. Azure DNS zone name
+  -g, --resource-group     Azure resource group where Azure DNS is located
 
-  -r, --record             Required. DNS record name to be created/updated
+  -z, --zone               Azure DNS zone name
 
-  -s, --subscription-id    Required. Azure subscription ID
+  -r, --record             DNS record name to be created/updated
+
+  -s, --subscription-id    Azure subscription ID
 
   -t, --tenant-id          Azure tenant ID (or set AZURE_TENANT_ID)
 
