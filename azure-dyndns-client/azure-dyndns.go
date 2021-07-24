@@ -19,8 +19,8 @@ import (
 )
 
 type Config struct {
-	SubscriptionId string `json:"subscriptionId"`
-	ResourceGroup  string `json:"resourceGroup"`
+	SubscriptionId string
+	ResourceGroup  string
 	ZoneName       string
 	RecordName     string
 	ClientId       string
@@ -73,7 +73,7 @@ func main() {
 }
 
 func updateRecord(config *Config) (dns.RecordSet, error) {
-	fmt.Printf("Using:\nsubscription: %s\nzone: %s\nrecord: %s", config.SubscriptionId, config.ZoneName, config.RecordName)
+	fmt.Printf("Using:\nsubscription: %s\nzone: %s\nrecord: %s\nresourceGroup: %s\ntenantId: %s\n", config.SubscriptionId, config.ZoneName, config.RecordName, config.ResourceGroup, config.TenantId)
 	ip, err := getIP()
 	if err != nil {
 		return dns.RecordSet{}, errors.New("Failed to retrieve public IP: " + err.Error())
@@ -85,7 +85,7 @@ func updateRecord(config *Config) (dns.RecordSet, error) {
 	}
 
 	client.Authorizer = authorizer
-	creator := "azure-dyndns-client"
+	creator := "azure-dyndns-client (Go)"
 	updatedtime := time.Now().String()
 	record := dns.RecordSet{
 		Name: &config.RecordName,
@@ -132,6 +132,8 @@ func readConfigFile(file string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+
+	defer jsonFile.Close()
 
 	bytes, err := ioutil.ReadAll(jsonFile)
 	if err != nil {
