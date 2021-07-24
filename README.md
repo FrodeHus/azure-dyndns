@@ -10,13 +10,27 @@ All clients makes use of the following environment variables if found:
 
 These can be overriden using command line arguments as well - but remember that these can show up in history, process listings etc.
 
+All clients can also make use of a configuration like this:
+
+```json
+{
+ "subscriptionId": "",
+ "resourceGroup": "",
+ "zoneName": "",
+ "recordName": "",
+ "clientId": "",
+ "clientSecret": "",
+ "tenantId": ""
+}
+```
+
 ## azure-dyndns-client
 
 Golang implementation.
 
 Install using `go get -u github.com/frodehus/azure-dyndns/azure-dyndns-client` or compile from source
 
-```
+```text
 $ azure-dyndns-client --help
 
 Usage of azure-dyndns-client:
@@ -24,6 +38,8 @@ Usage of azure-dyndns-client:
         Client ID of the service principal used to login (or set AZURE_CLIENT_ID)
   -client-secret string
         Client secret used to authenticate (or set AZURE_CLIENT_SECRET)
+  -config string
+        Path of the configuration file to use
   -record string
         Name of the DNS record to update
   -resource-group string
@@ -52,6 +68,7 @@ Update Azure DNS record based on current public IP
 
 optional arguments:
   -h, --help            show this help message and exit
+  --config CONFIG       Path to configuration file
   --subscription-id SUBSCRIPTION_ID
                         Azure subscription ID
   --resource-group RESOURCE_GROUP
