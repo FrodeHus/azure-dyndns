@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/dns/mgmt/dns"
 	"github.com/Azure/go-autorest/autorest"
@@ -70,12 +71,17 @@ func updateRecord(config *DynDnsConfig) (dns.RecordSet, error) {
 	}
 
 	client.Authorizer = authorizer
-
+	creator := "azure-dyndns-client"
+	updatedtime := time.Now().String()
 	record := dns.RecordSet{
 		Name: &config.recordName,
 		RecordSetProperties: &dns.RecordSetProperties{
 			TTL:      to.Int64Ptr(300),
 			ARecords: &[]dns.ARecord{{Ipv4Address: &ip}},
+			Metadata: map[string]*string{
+				"createdBy": &creator,
+				"updated":   &updatedtime,
+			},
 		},
 	}
 	result, err := client.CreateOrUpdate(context.Background(), config.resourceGroup, config.zoneName, config.recordName, dns.A, record, "", "")
