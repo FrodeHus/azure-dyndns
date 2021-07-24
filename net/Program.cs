@@ -88,15 +88,4 @@ namespace AzureDynDns
             return (tenantId, clientId, clientSecret);
         }
     }
-
-    public class Config
-    {
-        public string SubscriptionId { get; set; }
-        public string ResourceGroup { get; set; }
-        public string ZoneName { get; set; }
-        public string RecordName { get; set; }
-        public string TenantId { get; set; }
-        public string ClientId { get; set; }
-        public string ClientSecret { get; set; }
-    }
 }
