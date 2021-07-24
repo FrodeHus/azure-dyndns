@@ -73,7 +73,6 @@ func main() {
 }
 
 func updateRecord(config *Config) (dns.RecordSet, error) {
-	fmt.Printf("Using:\nsubscription: %s\nzone: %s\nrecord: %s\nresourceGroup: %s\ntenantId: %s\n", config.SubscriptionId, config.ZoneName, config.RecordName, config.ResourceGroup, config.TenantId)
 	ip, err := getIP()
 	if err != nil {
 		return dns.RecordSet{}, errors.New("Failed to retrieve public IP: " + err.Error())
