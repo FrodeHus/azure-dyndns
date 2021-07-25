@@ -10,12 +10,15 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/dns/mgmt/dns"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/pterm/pterm"
 )
 
 type Config struct {
@@ -26,6 +29,8 @@ type Config struct {
 	ClientId       string
 	ClientSecret   string
 	TenantId       string
+	Service        bool
+	Interval       int
 }
 
 func main() {
@@ -37,6 +42,8 @@ func main() {
 	clientSecret := flag.String("client-secret", "", "Client secret used to authenticate (or set AZURE_CLIENT_SECRET)")
 	tenantId := flag.String("tenant", "", "Azure tenant where the Azure DNS is located (or set AZURE_TENANT_ID)")
 	configFile := flag.String("config", "", "Path of the configuration file to use")
+	asService := flag.Bool("service", false, "Periodically updates DNS records")
+	interval := flag.Int("interval", 300, "Define how often the DNS record should be updated (in seconds) when running as a service")
 	flag.Parse()
 
 	var c Config
@@ -56,14 +63,52 @@ func main() {
 			ClientId:       *clientId,
 			ClientSecret:   *clientSecret,
 			TenantId:       *tenantId,
+			Service:        *asService,
+			Interval:       *interval,
 		}
 	}
 
-	result, err := updateRecord(&c)
-	if err != nil {
-		log.Fatal(err)
-	}
+	if c.Service {
+		runService(&c)
+	} else {
+		result, err := updateRecord(&c)
+		if err != nil {
+			log.Fatal(err)
+		}
 
+		printResult(&result)
+	}
+}
+
+func runService(config *Config) {
+	ticker := time.NewTicker(time.Duration(config.Interval) * time.Second)
+	done := make(chan bool)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		signal := <-sigs
+		fmt.Printf("Got %s - Stopping service...\n", signal)
+		done <- true
+	}()
+
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			case _ = <-ticker.C:
+				_, err := updateRecord(config)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}
+	}()
+	<-done
+}
+
+func printResult(result *dns.RecordSet) {
 	r, err := json.Marshal(result)
 	if err != nil {
 		log.Fatal(err)
@@ -73,13 +118,17 @@ func main() {
 }
 
 func updateRecord(config *Config) (dns.RecordSet, error) {
+	spinner, _ := pterm.DefaultSpinner.Start("Updating DNS record...")
 	ip, err := getIP()
 	if err != nil {
+		spinner.Fail()
 		return dns.RecordSet{}, errors.New("Failed to retrieve public IP: " + err.Error())
 	}
+	spinner.UpdateText("Got IP " + ip)
 	client := dns.NewRecordSetsClient(config.SubscriptionId)
 	authorizer, err := getAuthorizer(config)
 	if err != nil {
+		spinner.Fail()
 		return dns.RecordSet{}, err
 	}
 
@@ -99,8 +148,10 @@ func updateRecord(config *Config) (dns.RecordSet, error) {
 	}
 	result, err := client.CreateOrUpdate(context.Background(), config.ResourceGroup, config.ZoneName, config.RecordName, dns.A, record, "", "")
 	if err != nil {
+		spinner.Fail()
 		return dns.RecordSet{}, err
 	}
+	spinner.Success("DNS record " + pterm.LightCyan(config.RecordName+"."+config.ZoneName) + " updated with IP " + pterm.LightCyan(ip))
 	return result, nil
 }
 
