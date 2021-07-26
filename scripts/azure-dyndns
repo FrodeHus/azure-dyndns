@@ -1,0 +1,75 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides: daemon
+# Required-Start: $local_fs $network $syslog
+# Required-Stop: $local_fs $network $syslog
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Descriptin: Azure Dynamic DNS Updater
+# Description:
+### END INIT INFO
+set -e
+
+NAME="azure-dyndns-client"
+PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+APPDIR="/opt/azure-dyndns"
+APPBIN="/opt/azure-dyndns/azure-dyndns-client"
+USER="frode"
+APPARGS="-config /opt/azure-dyndns/azure-dyndns.json"
+PIDFILE=/opt/azure-dyndns/$NAME.pid
+
+common_opts="--quiet --chuid $USER --pidfile $PIDFILE"
+
+start(){
+        echo "Starting '$NAME'..."
+        start-stop-daemon --start $common_opts --background --make-pidfile --chdir "$APPDIR" --startas /bin/bash -- -c "exec $APPBIN $APPARGS" || true
+        echo  "done\n"
+}
+
+stop(){
+        echo "Stopping '$NAME'..."
+        opt=${@:-}
+        start-stop-daemon --stop --signal INT --oknodo $opt --remove-pidfile $common_opts
+        echo "done\n"
+}
+
+status(){
+        start-stop-daemon --status $common_opts && exit_status_$? || exist_status=$?
+        echo asdf $exit_status
+        case "$exit_status" in
+                0)
+                        echo "Program '$NAME' is running."
+                        ;;
+                1)
+                        echo "Program '$NAME' is not running and the pid file exists"
+                        ;;
+                3)
+                        echo "Program '$NAME' is not running."
+                        ;;
+                4)
+                        echo "Unable to determine program '$NAME' status."
+                        ;;
+        esac
+}
+
+case "$1" in
+        start)
+                start
+                ;;
+        stop)
+                stop
+                ;;
+        restart)
+                stop
+                start
+                ;;
+        status)
+                status
+                ;;
+        *)
+                echo "Usage: $NAME {start|stop|restart|status}" >&2
+                exit 1
+                ;;
+esac
+
+exit 0
