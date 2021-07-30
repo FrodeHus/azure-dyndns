@@ -34,44 +34,32 @@ type Config struct {
 }
 
 func main() {
-	subscription := flag.String("subscription-id", "", "ID of the subscription where the Azure DNS zone is located")
-	resourceGroup := flag.String("resource-group", "", "Name of the resource group where the Azure DNS zone is located")
-	zoneName := flag.String("zone", "", "Name of the Azure DNS zone")
-	recordName := flag.String("record", "", "Name of the DNS record to update")
-	clientId := flag.String("client-id", "", "Client ID of the service principal used to login (or set AZURE_CLIENT_ID)")
-	clientSecret := flag.String("client-secret", "", "Client secret used to authenticate (or set AZURE_CLIENT_SECRET)")
-	tenantId := flag.String("tenant", "", "Azure tenant where the Azure DNS is located (or set AZURE_TENANT_ID)")
+	config := &Config{}
+	flag.StringVar(&config.SubscriptionId, "subscription-id", "", "ID of the subscription where the Azure DNS zone is located")
+	flag.StringVar(&config.ResourceGroup, "resource-group", "", "Name of the resource group where the Azure DNS zone is located")
+	flag.StringVar(&config.ZoneName, "zone", "", "Name of the Azure DNS zone")
+	flag.StringVar(&config.RecordName, "record", "", "Name of the DNS record to update")
+	flag.StringVar(&config.ClientId, "client-id", "", "Client ID of the service principal used to login (or set AZURE_CLIENT_ID)")
+	flag.StringVar(&config.ClientSecret, "client-secret", "", "Client secret used to authenticate (or set AZURE_CLIENT_SECRET)")
+	flag.StringVar(&config.TenantId, "tenant", "", "Azure tenant where the Azure DNS is located (or set AZURE_TENANT_ID)")
+	flag.BoolVar(&config.Service, "service", false, "Periodically updates DNS records")
+	flag.IntVar(&config.Interval, "interval", 300, "Define how often the DNS record should be updated (in seconds) when running as a service")
 	configFile := flag.String("config", "", "Path of the configuration file to use")
-	asService := flag.Bool("service", false, "Periodically updates DNS records")
-	interval := flag.Int("interval", 300, "Define how often the DNS record should be updated (in seconds) when running as a service")
 	flag.Parse()
 
-	var c Config
 	if configFile != nil {
-		config, err := readConfigFile(*configFile)
+		c, err := readConfigFile(*configFile)
 		if err != nil {
 			log.Fatal("Failed to load configuration file: " + err.Error())
 		}
 
-		c = config
-	} else {
-		c = Config{
-			SubscriptionId: *subscription,
-			ResourceGroup:  *resourceGroup,
-			ZoneName:       *zoneName,
-			RecordName:     *recordName,
-			ClientId:       *clientId,
-			ClientSecret:   *clientSecret,
-			TenantId:       *tenantId,
-			Service:        *asService,
-			Interval:       *interval,
-		}
+		config = &c
 	}
 
-	if c.Service {
-		runService(&c)
+	if config.Service {
+		runService(*config)
 	} else {
-		result, err := updateRecord(&c)
+		result, err := updateRecord(*config)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -80,7 +68,7 @@ func main() {
 	}
 }
 
-func runService(config *Config) {
+func runService(config Config) {
 	ticker := time.NewTicker(time.Duration(config.Interval) * time.Second)
 	done := make(chan bool)
 	sigs := make(chan os.Signal, 1)
@@ -117,7 +105,7 @@ func printResult(result *dns.RecordSet) {
 	fmt.Printf("%s\n", r)
 }
 
-func updateRecord(config *Config) (dns.RecordSet, error) {
+func updateRecord(config Config) (dns.RecordSet, error) {
 	spinner, _ := pterm.DefaultSpinner.Start("Updating DNS record...")
 	ip, err := getIP()
 	if err != nil {
@@ -126,7 +114,7 @@ func updateRecord(config *Config) (dns.RecordSet, error) {
 	}
 	spinner.UpdateText("Got IP " + ip)
 	client := dns.NewRecordSetsClient(config.SubscriptionId)
-	authorizer, err := getAuthorizer(config)
+	authorizer, err := getAuthorizer(&config)
 	if err != nil {
 		spinner.Fail()
 		return dns.RecordSet{}, err
