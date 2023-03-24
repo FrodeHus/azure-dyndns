@@ -4,6 +4,7 @@ from datetime import datetime
 import argparse
 import json
 import os
+import urllib
 
 parser = argparse.ArgumentParser(
     description="Update Azure DNS record based on current public IP"
@@ -69,6 +70,15 @@ def update_dns(ip: str):
     )
     print(f"{record_set.fqdn} - {ip} - {record_set.provisioning_state}")
 
+    """ uncomment this block if you want to monitor that the script is actually running regularily via pushmon
+    urlString = 'http://pshmn.com/xxxxxxx'
+    try:
+        handle = urllib.request.urlopen(urlString)
+        handle.read()
+        handle.close()
+    except IOError:
+        print ("log error")
+    """
 
 def get_external_ip():
     import urllib3
