@@ -114,7 +114,7 @@ func getAuthorizer(config *Config) (autorest.Authorizer, error) {
 }
 
 func getIP() (string, error) {
-	req, err := http.NewRequest(http.MethodGet, "https://ifconfig.me", nil)
+	req, err := http.NewRequest(http.MethodGet, "https://ifconfig.me/ip", nil)
 	if err != nil {
 		return "", err
 	}
