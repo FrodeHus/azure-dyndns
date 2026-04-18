@@ -114,12 +114,21 @@ func getAuthorizer(config *Config) (autorest.Authorizer, error) {
 }
 
 func getIP() (string, error) {
-	req, err := http.Get("https://ifconfig.me")
+	req, err := http.NewRequest(http.MethodGet, "https://ifconfig.me", nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Content-Type", "text/plain")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+
 	if err != nil {
 		return "", err
 	}
-	defer req.Body.Close()
-	body, err := ioutil.ReadAll(req.Body)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
