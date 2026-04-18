@@ -116,7 +116,7 @@ func getAuthorizer(config *Config) (autorest.Authorizer, error) {
 func getIP() (string, error) {
 	req, err := http.NewRequest(http.MethodGet, "https://ifconfig.me", nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	req.Header.Add("Content-Type", "text/plain")
@@ -148,6 +148,9 @@ func readConfigFile(file string) (Config, error) {
 		return Config{}, err
 	}
 	var config Config
-	json.Unmarshal(bytes, &config)
+	err = json.Unmarshal(bytes, &config)
+	if err != nil {
+		return Config{}, err
+	}
 	return config, nil
 }
